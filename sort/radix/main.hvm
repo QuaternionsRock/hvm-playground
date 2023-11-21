@@ -1,0 +1,119 @@
+// Sort : Arr -> Arr
+Sort = λarr (ToArr (ToMap arr))
+
+// ToMap : Arr -> Map
+ToMap = λarr 
+  (arr 
+    Map.Free
+    Radix 
+    λa λb (Merge (ToMap a) (ToMap b)))
+
+// ToArr : Map -> Arr
+ToArr = λmap (ToArr.go map 0)
+
+// ToArr.go : Map -> U24 -> Arr
+ToArr.go = λmap 
+  (map 
+    λ* Arr.Null
+    Arr.Leaf
+    λa λb λx
+      let x = (<< x 1)
+      let y = (| x 1)
+      (Arr.Node (ToArr.go a x) (ToArr.go b y)))
+
+// Merge : Map -> Map -> Map
+Merge = λmap0 
+  (map0 
+    λmap1 map1 
+    λmap1
+      (map1 
+        Map.Used 
+        Map.Used 
+        Unreachable)
+    λa λb λmap1 
+      (map1 
+        (Map.Both a b) 
+        Unreachable
+        λc λd 
+          (Map.Both (Merge a c) (Merge b d))))
+
+// Radix : U24 -> Map
+Radix = λn (Radix.go 24 n)
+
+// Radix.go : U24 -> U24 -> Map
+Radix.go = λx match x {
+  0: λn Map.Used
+  1+x: λn 
+    (Data.U24.swap 
+      (& n (<< 1 x)) 
+      (Radix.go x n) 
+      Map.Free)
+}
+
+// Reverse : Arr -> Arr
+Reverse = λarr 
+  (arr 
+    Arr.Null 
+    Arr.Leaf 
+    λa λb (Arr.Node (Reverse b) (Reverse a)))
+
+// Sum : Arr -> U24
+Sum = λarr 
+  (arr 
+    0
+    λx x
+    λa λb (+ (Sum a) (Sum b)))
+
+// Gen : U24 -> Arr
+Gen = λn (Gen.go n 0)
+
+// Gen.go : U24 -> U24 -> Arr
+Gen.go = λn match n {
+  0: λx (Arr.Leaf x)
+  1+n: λx
+    let x = (<< x 1)
+    let y = (| x 1)
+    (Arr.Node (Gen.go n x) (Gen.go n y))
+}
+
+// Data.U24.swap : U24 -> Map -> Map -> Map
+Data.U24.swap = λn match n {
+  0: λa λb (Map.Both a b)
+  1+n: λa λb (Map.Both b a)
+}
+
+// Arr
+Arr.Null = λnull λleaf λnode null
+Arr.Leaf = λx λnull λleaf λnode (leaf x)
+Arr.Node = λa λb λnull λleaf λnode (node a b)
+
+// Visual representation of an Arr
+Arr.ID = λarr 
+  (arr 
+    0
+    λx x 
+    λa λb ((Arr.ID a), (Arr.ID b)))
+
+// Map
+Map.Free = λfree λused λboth free
+Map.Used = λfree λused λboth used
+Map.Both = λa λb λfree λused λboth (both a b)
+
+// Visual representation of a Map
+Map.ID = λmap 
+  (map 
+    0
+    1
+    λa λb ((Map.ID a), (Map.ID b)))
+
+// Indicates unreachable code
+Unreachable = λ* Unreachable
+
+N = 12
+
+// Main = (Arr.ID (Gen N))
+// Main = (Sum (Gen N))
+// Main = (Arr.ID (Reverse (Gen N)))
+// Main = (Map.ID (ToMap (Reverse (Gen N))))
+// Main = (Arr.ID (Sort (Reverse (Gen N))))
+Main = (Sum (Sort (Reverse (Gen N))))
